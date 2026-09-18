@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nexus Search</title>
+    <style>
+        :root {
+            --primary: #4285f4;
+            --secondary: #34a853;
+            --bg: #ffffff;
+            --text: #202124;
+            --gray: #5f6368;
+            --border: #dfe1e5;
+            --hover: #f8f9fa;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Arial, sans-serif; }
+        
+        body { background: var(--bg); color: var(--text); display: flex; flex-direction: column; min-height: 100vh; }
+
+        /* Home State */
+        .home-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            transition: all 0.3s ease;
+        }
+
+        .logo {
+            font-size: 4rem;
+            font-weight: bold;
+            margin-bottom: 20px;
+            letter-spacing: -2px;
+        }
+        .logo span:nth-child(1) { color: #4285f4; }
+        .logo span:nth-child(2) { color: #ea4335; }
+        .logo span:nth-child(3) { color: #fbbc05; }
+        .logo span:nth-child(4) { color: #4285f4; }
+        .logo span:nth-child(5) { color: #34a853; }
+        .logo span:nth-child(6) { color: #ea4335; }
+
+        .search-bar-wrapper {
+            width: 100%;
+            max-width: 584px;
+            position: relative;
+        }
+
+        .search-bar {
+            width: 100%;
+            height: 46px;
+            border-radius: 24px;
+            border: 1px solid var(--border);
+            padding: 0 45px 0 20px;
+            font-size: 16px;
+            outline: none;
+            box-shadow: 0 1px 6px rgba(32,33,36,0.1);
+            transition: all 0.2s;
+        }
+
+        .search-bar:focus {
+            box-shadow: 0 1px 6px rgba(32,33,36,0.28);
+            border-color: transparent;
+        }
+
+        .search-icon {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--primary);
+            cursor: pointer;
+        }
+
+        .buttons { margin-top: 30px; display: flex; gap: 10px; }
+        
+        .btn {
+            background: #f8f9fa;
+            border: 1px solid #f8f9fa;
+            border-radius: 4px;
+            color: #3c4043;
+            font-size: 14px;
+            padding: 8px 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn:hover { border-color: #dadce0; box-shadow: 0 1px 1px rgba(0,0,0,0.1); }
+
+        /* Results State */
+        .results-header {
+            padding: 20px 30px;
+            border-bottom: 1px solid var(--border);
+            display: none; /* Hidden by default */
+            align-items: center;
+        }
+
+        .results-logo { font-size: 1.5rem; font-weight: bold; margin-right: 30px; cursor: pointer; }
+        .results-logo span:nth-child(1) { color: #4285f4; }
+        .results-logo span:nth-child(2) { color: #ea4335; }
+        .results-logo span:nth-child(3) { color: #fbbc05; }
+        .results-logo span:nth-child(4) { color: #4285f4; }
+        .results-logo span:nth-child(5) { color: #34a853; }
+        .results-logo span:nth-child(6) { color: #ea4335; }
+
+        .results-search-bar {
+            width: 600px;
+            height: 40px;
+            border-radius: 20px;
+            border: 1px solid var(--border);
+            padding: 0 20px;
+            font-size: 14px;
+            outline: none;
+        }
+
+        .results-container {
+            padding: 20px 30px;
+            max-width: 650px;
+            display: none; /* Hidden by default */
+        }
+
+        .result-stats {
+            color: var(--gray);
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+
+        .result-item { margin-bottom: 30px; }
+        
+        .result-url {
+            color: #202124;
+            font-size: 14px;
+            margin-bottom: 5px;
+            display: block;
+            text-decoration: none;
+        }
+        
+        .result-title {
+            color: #1a0dab;
+            font-size: 20px;
+            text-decoration: none;
+            display: block;
+            margin-bottom: 5px;
+        }
+        .result-title:hover { text-decoration: underline; }
+
+        .result-snippet {
+            color: #4d5156;
+            font-size: 14px;
+            line-height: 1.58;
+        }
+
+        .loading { display: none; text-align: center; margin-top: 20px; color: var(--gray); }
+
+        /* API Section */
+        .api-section {
+            margin-top: 50px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            max-width: 800px;
+            width: 90%;
+            text-align: left;
+        }
+        .api-section h3 { margin-bottom: 10px; color: var(--text); }
+        .api-section code { background: #fff; padding: 2px 5px; border-radius: 4px; border: 1px solid #ddd; }
+        .api-section pre { background: #2d2d2d; color: #fff; padding: 15px; border-radius: 5px; overflow-x: auto; margin-top: 10px; }
+
+        /* Crawl Control */
+        .crawl-control {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .crawl-input {
+            padding: 8px;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            width: 300px;
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- Home View -->
+    <div id="home-view" class="home-container">
+        <div class="logo">
+            <span>N</span><span>e</span><span>x</span><span>u</span><span>s</span><span></span>
+        </div>
+        
+        <div class="search-bar-wrapper">
+            <input type="text" id="search-input" class="search-bar" placeholder="Search the web..." autocomplete="off">
+            <svg class="search-icon" onclick="performSearch()" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+        </div>
+
+        <div class="buttons">
+            <button class="btn" onclick="startCrawlDefault()">Crawl Wikipedia Demo</button>
+            <button class="btn" onclick="scrollToApi()">API Docs</button>
+        </div>
+
+        <div id="loading" class="loading">Searching index...</div>
+
+        <div id="api-docs" class="api-section">
+            <h3>🚀 Free API Access</h3>
+            <p>Use our search engine programmatically. No key required.</p>
+            <pre>GET /api/search?q=your_query&limit=10</pre>
+            <p style="margin-top:10px; font-size: 0.9em;">Example: <code id="api-example-url"></code></p>
+            
+            <div class="crawl-control">
+                <strong>Start Crawler:</strong>
+                <input type="text" id="seed-url" class="crawl-input" placeholder="https://example.com" value="https://en.wikipedia.org/wiki/Main_Page">
+                <button class="btn" onclick="startCrawlCustom()">Start Crawling</button>
+                <span id="crawl-status" style="font-size: 0.8em; color: var(--gray);"></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Results View (Overlay) -->
+    <div id="results-view" style="display:none;">
+        <div class="results-header">
+            <div class="results-logo" onclick="location.reload()">
+                <span>N</span><span>e</span><span>x</span><span>u</span><span>s</span>
+            </div>
+            <input type="text" id="results-search-input" class="results-search-bar" onkeypress="if(event.key==='Enter') performSearchFromHeader()">
+        </div>
+        <div class="results-container" id="results-list">
+            <!-- Results injected here -->
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = '/api';
+        
+        // Set API example URL
+        document.getElementById('api-example-url').textContent = window.location.origin + '/api/search?q=python+programming';
+
+        function scrollToApi() {
+            document.getElementById('api-docs').scrollIntoView({behavior: "smooth"});
+        }
+
+        function startCrawlDefault() {
+            startCrawlCustom();
+        }
+
+        async function startCrawlCustom() {
+            const url = document.getElementById('seed-url').value;
+            const statusSpan = document.getElementById('crawl-status');
+            statusSpan.textContent = "Starting...";
+            
+            try {
+                const res = await fetch(`${API_BASE}/crawl`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({url: url})
+                });
+                const data = await res.json();
+                statusSpan.textContent = data.status;
+                
+                // Poll status
+                let count = 0;
+                const interval = setInterval(async () => {
+                    const sRes = await fetch(`${API_BASE}/status`);
+                    const sData = await sRes.json();
+                    statusSpan.textContent = `Crawling: ${sData.crawled_count} pages...`;
+                    if(!sData.is_crawling || count > 20) clearInterval(interval);
+                    count++;
+                }, 2000);
+                
+            } catch (e) {
+                statusSpan.textContent = "Error starting crawl.";
+                console.error(e);
+            }
+        }
+
+        async function performSearch() {
+            const query = document.getElementById('search-input').value;
+            if(!query) return;
+            executeSearch(query);
+        }
+
+        function performSearchFromHeader() {
+            const query = document.getElementById('results-search-input').value;
+            if(!query) return;
+            executeSearch(query);
+        }
+
+        async function executeSearch(query) {
+            document.getElementById('loading').style.display = 'block';
+            
+            // Switch UI to results mode
+            document.getElementById('home-view').style.display = 'none';
+            document.getElementById('results-view').style.display = 'block';
+            document.getElementById('results-search-input').value = query;
+            document.getElementById('results-list').innerHTML = '';
+
+            try {
+                const res = await fetch(`${API_BASE}/search?q=${encodeURIComponent(query)}`);
+                const data = await res.json();
+                
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('results-list').style.display = 'block';
+                
+                const container = document.getElementById('results-list');
+                
+                if(data.results.length === 0) {
+                    container.innerHTML = `<p>No results found for "${query}". Try crawling a website first!</p>`;
+                    return;
+                }
+
+                const stats = document.createElement('div');
+                stats.className = 'result-stats';
+                stats.textContent = `About ${data.total_results} results (0.00 seconds)`;
+                container.appendChild(stats);
+
+                data.results.forEach(r => {
+                    const item = document.createElement('div');
+                    item.className = 'result-item';
+                    item.innerHTML = `
+                        <a href="${r.url}" class="result-url" target="_blank">${r.url}</a>
+                        <a href="${r.url}" class="result-title" target="_blank">${r.title}</a>
+                        <div class="result-snippet">${r.snippet}</div>
+                    `;
+                    container.appendChild(item);
+                });
+
+            } catch (e) {
+                console.error(e);
+                document.getElementById('loading').textContent = "Error fetching results.";
+            }
+        }
+
+        // Allow Enter key on home
+        document.getElementById('search-input').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') performSearch();
+        });
+    </script>
+</body>
+</html>

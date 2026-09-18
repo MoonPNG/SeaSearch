@@ -1,0 +1,9 @@
+```
+# Logs and temp files
+*.log
+server.log
+
+# Database files
+*.db
+search_engine.db
+```
